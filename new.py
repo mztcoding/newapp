@@ -1,7 +1,6 @@
 import streamlit as st 
 from detector import detection
 import base64
-import numpy as np
 from PIL import Image
 from streamlit_option_menu import option_menu
 
@@ -15,8 +14,6 @@ st.set_page_config(page_title="YOLOv8 Detection App", layout="wide")
 
 # Load the background image and convert it to base64
 background_image = get_base64_image("./bgimg.jpg")
-
-
 
 page_bg_img = f'''
 <style>
@@ -36,13 +33,15 @@ page_bg_img = f'''
         .sidebar-link:hover {{
             color: #ff0000;
         }}
+        /* Add margin to move the images down by 50px */
+        .image-container img {{
+            margin-top: 50px;
+        }}
 </style>
 '''
 
 # Inject custom CSS
 st.markdown(page_bg_img, unsafe_allow_html=True)
-
-
 
 # Sidebar Menu
 with st.sidebar:
@@ -63,10 +62,6 @@ with st.sidebar:
     selected = option_menu("Main Menu", ["Home", 'Downloads', 'About',  'Contact Us'],
                         icons=['house', 'cloud-arrow-down', 'info-square', 'envelope', ], menu_icon="cast", default_index=0,
                         styles={"nav-link-selected": {"background-color": "green"}})
-
-# Initialize the session state
-# if "page" not in st.session_state:
-#     st.session_state.page = "Home"
 
 # Home Page
 if selected == "Home":
@@ -127,14 +122,27 @@ if selected == "Home":
                 with open("temp_image.jpg", "wb") as f:
                     f.write(uploaded_image.getbuffer())
 
-                # Display uploaded image
-                st.image(uploaded_image, caption="Uploaded Image", use_column_width=False, width=300)
+                # Resize the uploaded image to match the size of the detected image (300x250)
+                image = Image.open(uploaded_image)
+                resized_uploaded_image = image.resize((300, 250))
 
-                # Run YOLOv8 detection on the uploaded image
+                # Columns for inline display of images with CSS class to move them down
+                col1, col2 = st.columns(2)
+
+                # Display resized uploaded image in the first column
+                with col1:
+                    st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                    st.image(resized_uploaded_image, caption="Uploaded Image", use_column_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                # Run YOLOv8 detection on the uploaded image and get resized detection result
                 detected_image = detection("temp_image.jpg")
 
-                # Display the detected image
-                st.image(detected_image, caption="Detection Results", use_column_width=False)
+                # Display the detected image in the second column
+                with col2:
+                    st.markdown('<div class="image-container">', unsafe_allow_html=True)
+                    st.image(detected_image, caption="Detection Results", use_column_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.error("Please upload an image.")
 
